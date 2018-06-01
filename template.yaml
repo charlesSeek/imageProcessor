@@ -34,8 +34,9 @@ Resources:
         Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
         Properties:
             CodeUri: image_processor/
-            Handler: app.lambda_handler
+            Handler: app.handler
             Runtime: nodejs8.10
+            Timeout: 300
             Events:
                 ImageProcessor:
                     Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api

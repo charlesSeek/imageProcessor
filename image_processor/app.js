@@ -3,7 +3,7 @@ const im = require('imagemagick');
 const path = require('path');
 const execSync = require('child_process').execSync;
 const fs = require('fs');
-const needle = require('needle');
+const RestClient = require('node-rest-client').Client;
 
 const s3 = new AWS.S3();
 
@@ -14,7 +14,7 @@ exports.PROFILES = {
   smallThumb: {
     size: 300,
     filesize: 100,
-    suffix: '-st'
+    suffix: '-st',
   },
   largeThumb: {
     size: 600,
@@ -22,12 +22,19 @@ exports.PROFILES = {
     suffix: '-lt'
   },
   smallPreview: {
-    filesize: 1024,
+    size: 1024,
+    filesize: 800,
     suffix: '-sp'
   },
-  largePreview: {
-    filesize: 2048,
-    suffix: '-lp'
+  smallWatermarkedPreview: {
+    size: 1024,
+    watermark: true,
+    filesize: 800,
+    suffix: '-wmsp'
+  },
+  originalPreview: {
+    filesize: 1024,
+    suffix: '-op'
   }
 }
 
@@ -45,9 +52,9 @@ exports.downloadImage = function (bucket, s3Key, destinationPath) {
       Bucket: bucket,
       Key: s3Key
     }, function(err, response) {
-        var buffer = new Buffer(response.Body, "binary");
-        fs.writeFileSync(destinationPath, buffer);
-        resolve(destinationPath);
+      var buffer = new Buffer(response.Body, "binary");
+      fs.writeFileSync(destinationPath, buffer);
+      resolve(destinationPath);
     });
   });
 }
@@ -113,11 +120,26 @@ exports.convertImage = function(imagePath, outputPath, profile_name) {
   let profile = exports.PROFILES[profile_name];
   if(profile !== undefined) {
     args.push(['-define jpeg:extent=', profile.filesize, 'kb'].join(''));
+    
+    
     if(profile.size !== undefined) {
-      let resize = metadata.orientation == 'landscape' ? profile.size+'x' : 'x'+profile.size;
+      let sizeTo = profile.size;
+      if (metadata.orientation == 'landscape') {
+        sizeTo = profile.size > metadata.width ? metadata.width : profile.size;
+      }
+      else {
+        sizeTo = profile.size > metadata.height ? metadata.height : profile.size;
+      }
+      let resize = metadata.orientation == 'landscape' ? sizeTo+'x' : 'x'+sizeTo;
+      
       args.push(['-resize', resize].join(' '));
     }
-    
+
+    if(profile.watermark) {
+      let fontSizer = profile.size ? profile.size : metadata.orientation == 'landscape' ? metadata.width : metadata.height;
+      args.push(['-fill', '"rgba(255,255,255,0.7)"', '-pointsize', fontSizer/5, '-gravity', 'center', '-annotate', '-40x-40+0+0', 'myadbox'].join(' '));
+    }
+
     newPath = exports.helpers.applySuffix(newPath, profile.suffix);
   }
   
@@ -159,41 +181,58 @@ exports.helpers = {
   },
   uploadPreviews: function(previews, bucket, key) {
     return new Promise(async function(resolve) {
-      let keys = [];
+      let keys = {};
       for(let i = 0; i < previews.length; i++){
         let preview = previews[i];
-        let newKey = await exports.uploadImage(preview.file, bucket, imageKey);
-        keys.push({
-            name: preview.name,
-            metadata: preview.metadata,
-            key: newKey
-        });
+        let newKey = await exports.uploadImage(preview.file, bucket, key);
+        keys[preview.name] = {key: newKey, metadata: preview.metadata};
       }
       resolve(keys);
     });
   },
-  postback: function(url, previewKeys) {
+  postback: function(url, imageMetadata, previewKeys) {
     params = {
       secret: 'HCpvuiUNRLwbMmtaqvkvdbLBE2ZeVgJhJdiUeUFuTGGZXxGG4m',
-      previews: previewKeys
+      orientation: imageMetadata.orientation,
+      size: {
+        dimensions: imageMetadata.width + 'x' + imageMetadata.height + ' pixels',
+        print_dimensions: imageMetadata.print.width + 'x' + imageMetadata.print.height + ' mm (@ 300DPI)'
+      },
+      preview_small: previewKeys.smallThumb.key,
+      preview_large: previewKeys.largeThumb.key,
+      preview_low_res: previewKeys.smallPreview.key,
+      preview_high_res: previewKeys.originalPreview.key,
+      preview_low_res_wm: previewKeys.smallWatermarkedPreview.key
     };
 
     return new Promise(function(resolve) {
-      needle.post(url, params).on('done', function(err, resp){
-        resolve(resp);
-      })
+      try {
+        let client = new RestClient();
+        client.post(url, {data: params}, function(data, resp){
+          console.log("POSTED");
+          resolve(resp);
+        });
+      }
+      catch(e) {
+        console.log(e.message);
+      }
     })
   }
 }
 
 exports.handler = async function(event, context, finished) {
-  const imagePath = exports.helpers.getImagePath(event.key);
-  const outputPath = exports.helpers.replaceExtension(imagePath, 'jpg');
-
-  await exports.downloadImage(bucket, event.key, imagePath);
-
-  const previews = exports.helpers.buildPreviews(imagePath, outputPath);
-  const previewKeys = await exports.helpers.uploadPreviews(previews, event.bucket, imageKey);
-  await exports.helpers.postback(event.postback_url, previewKeys);
-  finished();
+  try {
+    const params = JSON.parse(event.body).params;
+    const imagePath = exports.helpers.getImagePath(params.key);
+    const outputPath = exports.helpers.replaceExtension(imagePath, 'jpg');
+    await exports.downloadImage(params.bucket, params.key, imagePath);
+    const previews = exports.helpers.buildPreviews(imagePath, outputPath);
+    const previewKeys = await exports.helpers.uploadPreviews(previews, params.bucket, params.key);
+    const imageMetadata = exports.identifyImage(imagePath);
+    await exports.helpers.postback(params.postback_url, imageMetadata, previewKeys);
+    finished(null, {statusCode: 200});
+  }
+  catch (err) {
+    finshed(err.message, {statusCode: 500});
+  }
 }

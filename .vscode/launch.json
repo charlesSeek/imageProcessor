@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Attach to SAM Local",
+            "type": "node",
+            "request": "attach",
+            "address": "localhost",
+            "port": 5858,
+            "localRoot": "${workspaceRoot}/image_processor",
+            "remoteRoot": "/var/task",
+            "protocol": "inspector"
+        }
+    ]
+}
