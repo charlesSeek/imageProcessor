@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'sam-app
+Description: 'myadbox-lambda
 
-  Sample SAM Template for sam-app
+  Managed all of myadbox-lambda functions
 
   '
 Globals:
@@ -24,10 +24,26 @@ Outputs:
       Fn::GetAtt:
       - HelloWorldFunctionRole
       - Arn
+  ImageProcessorApi:
+    Description: API Gateway endpoint URL for Prod stage for Image Processor function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/processImage/
+  ImageProcessorFunction:
+    Description: Hello World Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - HelloWorldFunction
+      - Arn
+  ImageProcessorFunctionIamRole:
+    Description: Implicit IAM Role created for Image Processor function
+    Value:
+      Fn::GetAtt:
+      - ImageProcessorFunctionRole
+      - Arn
 Resources:
   HelloWorldFunction:
     Properties:
-      CodeUri: s3://myadbox-lambda/fff0c69b36ab369b8f10fce2bfa7bce8
+      CodeUri: s3://myadbox-lambda/5838f91380031a2ee9a9cebab4b7c45d
       Environment:
         Variables:
           PARAM1: VALUE
@@ -39,5 +55,18 @@ Resources:
           Type: Api
       Handler: app.lambda_handler
       Runtime: nodejs8.10
+    Type: AWS::Serverless::Function
+  ImageProcessorFunction:
+    Properties:
+      CodeUri: s3://myadbox-lambda/d93f51abd427ced47d70c78ee9931f67
+      Events:
+        ImageProcessor:
+          Properties:
+            Method: post
+            Path: /processImage
+          Type: Api
+      Handler: app.handler
+      Runtime: nodejs8.10
+      Timeout: 300
     Type: AWS::Serverless::Function
 Transform: AWS::Serverless-2016-10-31

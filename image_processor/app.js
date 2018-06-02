@@ -209,7 +209,6 @@ exports.helpers = {
       try {
         let client = new RestClient();
         client.post(url, {data: params}, function(data, resp){
-          console.log("POSTED");
           resolve(resp);
         });
       }
@@ -233,6 +232,6 @@ exports.handler = async function(event, context, finished) {
     finished(null, {statusCode: 200});
   }
   catch (err) {
-    finshed(err.message, {statusCode: 500});
+    finished(err.message, {statusCode: 500});
   }
 }
