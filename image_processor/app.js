@@ -221,7 +221,7 @@ exports.helpers = {
 
 exports.handler = async function(event, context, finished) {
   try {
-    const params = JSON.parse(event.body).params;
+    const params = JSON.parse(event.body);
     const imagePath = exports.helpers.getImagePath(params.key);
     const outputPath = exports.helpers.replaceExtension(imagePath, 'jpg');
     await exports.downloadImage(params.bucket, params.key, imagePath);

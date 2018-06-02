@@ -12,7 +12,9 @@
     "node-rest-client": "^3.1.0"
   },
   "scripts": {
-    "test": "./node_modules/.bin/mocha tests/"
+    "test": "./node_modules/.bin/mocha tests/",
+    "package": "sam package --template-file template.yaml --output-template-file packaged.yaml --s3-bucket myadbox-lambda",
+    "deploy": "sam deploy --template-file packaged.yaml --stack-name myadbox-lambda --capabilities CAPABILITY_IAM"
   },
   "devDependencies": {
     "chai": "^4.1.2",

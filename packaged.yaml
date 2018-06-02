@@ -58,7 +58,7 @@ Resources:
     Type: AWS::Serverless::Function
   ImageProcessorFunction:
     Properties:
-      CodeUri: s3://myadbox-lambda/d93f51abd427ced47d70c78ee9931f67
+      CodeUri: s3://myadbox-lambda/3443e2e84f74e79955970e5a02deb9e3
       Events:
         ImageProcessor:
           Properties:
