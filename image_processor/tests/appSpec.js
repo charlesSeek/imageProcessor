@@ -75,26 +75,38 @@ describe('uploadImage', function() {
 
 describe('identifyImage', function () {
   let imagePath = 'tests/fixtures/morpheus.jpg';
-  let metadata = app.identifyImage(imagePath);
+  let identify = app.identifyImage(imagePath);
   it('should get exif data', function() {
-    expect(metadata.exif).to.deep.equal({ColorSpace: 1, ExifImageLength: 835, ExifImageWidth: 1600, ExifOffset: 38, Orientation: 1});
+    identify.then(function(metadata) {
+      expect(metadata.exif).to.deep.equal({ColorSpace: 1, ExifImageLength: 835, ExifImageWidth: 1600, ExifOffset: 38, Orientation: 1});
+    });
   });
   it('should get width and height', function () {
-    expect(metadata.width).to.equal(1600);
-    expect(metadata.height).to.equal(835);
+    identify.then(function(metadata) {
+      expect(metadata.width).to.equal(1600);
+      expect(metadata.height).to.equal(835);
+    });
   });
   it('should get size', function() {
-    expect(metadata.fileSize).to.equal(258110);
+    identify.then(function(metadata) {
+      expect(metadata.fileSize).to.equal(258110);
+    });
   });
   it('should get format', function() {
-    expect(metadata.format).to.equal('JPEG');
+    identify.then(function(metadata) {
+      expect(metadata.format).to.equal('JPEG');
+    });
   });
   it('should get orientation', function() {
-    expect(metadata.orientation).to.equal('landscape');
+    identify.then(function(metadata) {
+      expect(metadata.orientation).to.equal('landscape');
+    });
   });
   it('should calculate the size at 300 DPI', function () {
-    expect(metadata.print.width).to.equal(135.47);
-    expect(metadata.print.height).to.equal(70.7);
+    identify.then(function(metadata) {
+      expect(metadata.print.width).to.equal(135.47);
+      expect(metadata.print.height).to.equal(70.7);
+    });
   });
 });
 
@@ -152,29 +164,41 @@ describe('convertImage', function() {
         let profile = app.PROFILES[profileName];
 
         describe(profileName, function () {
-          let metadata;
+          let conversion, identify;
           this.timeout(10000);
 
           before(function() {
-            newPath = app.convertImage(imagePath, outputPath, profileName);
-            metadata = app.identifyImage(newPath);
+            conversion = app.convertImage(imagePath, outputPath, profileName);
+            conversion.then(function(newPath) {
+              identify = app.identifyImage(newPath);
+            });
           });
 
           it('should produce a jpg', function() {
-            expect(fs.existsSync(newPath)).to.equal(true);
+            conversion.then(function(newPath) {
+              expect(fs.existsSync(newPath)).to.equal(true);
+            });
           });
 
-          it('should have a filesize less than ' + profile.filesize + 'Kb', function() {
-            expect(metadata.fileSize).to.be.below(profile.filesize * 1000);
+          it('should have a filesize less than ' + profile.filesize + 'Kb', async function() {
+            await conversion;
+            identify.then(function(metadata) {
+              expect(metadata.fileSize).to.be.below(profile.filesize * 1000);
+            });
           });
           it('should have '+profile.suffix+' in the filepath', function() {
-            expect(newPath).to.containIgnoreSpaces(profile.suffix);
+            conversion.then(function(newPath) {
+              expect(newPath).to.containIgnoreSpaces(profile.suffix);
+            });
           });
 
           if(profile.size !== undefined) {
-            it('should be up to ' + profile.size + ' pixels wide', function() {
-              let expectedSize = profile.size < metadata.width ? profile.size : metadata.width;
-              expect(metadata.width).to.be.equal(expectedSize);
+            it('should be up to ' + profile.size + ' pixels wide', async function() {
+              await conversion;
+              identify.then(function(metadata) {
+                let expectedSize = profile.size < metadata.width ? profile.size : metadata.width;
+                expect(metadata.width).to.be.equal(expectedSize);
+              });
             });
           }
 
