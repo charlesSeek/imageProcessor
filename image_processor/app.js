@@ -38,9 +38,9 @@ exports.PROFILES = {
 }
 
 const FORMAT_OPTIONS = {
-  defaults:  ['-strip', '-interlace', 'Plane'],
-  PSD: ['-trim', '-flatten'],
-  PS: ['-resize', '2048x', '-density', '600', '-flatten']
+  defaults:  ['-strip', '-interlace', 'Plane', '-flatten'],
+  PSD: ['-trim'],
+  PS: ['-resize', '2048x', '-density', '600']
 }
 
 exports.downloadImage = function (bucket, s3Key, destinationPath) {
