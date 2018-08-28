@@ -1,0 +1,31 @@
+# service: html-capture
+
+# custom:
+#   stage: dev
+#   debug: true
+#   awsIotHost: ${env:a223rvkafx151o.iot.us-east-1.amazonaws.com}
+#   chrome:
+#     functions:
+#       - run
+
+# provider:
+#   name: aws
+#   runtime: nodejs8.10
+#   stage: ${self:custom.stage}
+#   region: us-east-1
+#   environment:
+#     DEBUG: ${self:custom.debug}
+#     AWS_IOT_HOST: ${self:custom.awsIotHost}
+#   apiKeys:
+#     - ${self:custom.stage}-chromeless-session-key
+
+# functions:
+#   hello:
+#     handler: app.handler
+#     events:
+#       - http:
+#           path: htmlCapture
+#           method: get
+# plugins:
+#   - serverless-plugin-chrome
+#   - serverless-offline
