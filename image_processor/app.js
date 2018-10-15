@@ -39,9 +39,11 @@ exports.PROFILES = {
 
 const FORMAT_OPTIONS = {
   defaults:  ['-strip', '-interlace', 'Plane'],
-  GIF: ['-flatten']
-  PSD: ['-trim', '-flatten'],
-  PS: ['-resize', '2048x', '-density', '600', '-flatten']
+  GIF: ['-flatten', '-background', 'grey'],
+  PSD: ['-trim', '-flatten', '-background', 'grey'],
+  PS: ['-resize', '2048x', '-density', '600', '-flatten', '-background', 'grey'],
+  EPS: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB'],
+  EPT: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB']
 }
 
 exports.downloadImage = function (bucket, s3Key, destinationPath) {
@@ -237,10 +239,13 @@ exports.handler = async function(event, context) {
     const outputPath = exports.helpers.replaceExtension(imagePath, 'png');
     console.log("Downloading", job.bucket, job.key, imagePath);
     await exports.downloadImage(job.bucket, job.key, imagePath);
+
+    let originalPreview = await exports.convertImage(imagePath, outputPath, 'originalPreview');
+
     for(let j = 0; j < job.profiles.length; j++) {
       let profile = job.profiles[j];
       console.log("Converting...", profile);
-      let preview = await exports.convertImage(imagePath, outputPath, profile);
+      let preview = await exports.convertImage(originalPreview, outputPath, profile);
       console.log("Uploading", preview);
       response[profile] = await exports.uploadImage(preview, job.bucket, job.key);
     }
