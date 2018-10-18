@@ -38,11 +38,12 @@ exports.PROFILES = {
 }
 
 const FORMAT_OPTIONS = {
-  defaults:  ['-strip', '-interlace', 'Plane', '-flatten'],
-  PNG: ['-background', 'gray'],
-  PSD: ['-trim'],
-  TIFF: ['-background', 'gray'],
-  PS: ['-resize', '2048x', '-density', '600']
+  defaults:  ['-strip', '-interlace', 'Plane'],
+  GIF: ['-flatten', '-background', 'grey'],
+  PSD: ['-trim', '-flatten', '-background', 'grey'],
+  PS: ['-resize', '2048x', '-density', '600', '-flatten', '-background', 'grey'],
+  EPS: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB'],
+  EPT: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB']
 }
 
 exports.downloadImage = function (bucket, s3Key, destinationPath) {
@@ -86,7 +87,7 @@ exports.identifyImage = function (imagePath) {
   return new Promise(function(resolve) {
     im.identify(['-format', IDENTIFY_FORMAT, imagePath], function(err, output) {
       if (err) throw err;
-      
+
       let data = output.toString().split('\n');
       let features = data.shift().split(',');
       let metadata = {};
@@ -103,7 +104,7 @@ exports.identifyImage = function (imagePath) {
       for(let i=0; i < data.length; i++) {
         if (data[i].indexOf("exif:") == -1)
           break;
-    
+
         if (data[i].length > 0) {
           let pair = data[i].split(':')[1].split('=');
           metadata.exif[pair[0]] = parseInt(pair[1]);
@@ -127,18 +128,17 @@ exports.convertImage = function(imagePath, outputPath, profile_name) {
 
     let profile = exports.PROFILES[profile_name];
     if(profile !== undefined) {
-      args = args.concat(['-define', 'jpeg:extent='+profile.filesize+'kb']);
-      
+      args = args.concat(['-define', 'png:extent='+profile.filesize+'kb']);
+
       if(profile.size !== undefined) {
         let sizeTo = profile.size;
         if (metadata.orientation == 'landscape') {
           sizeTo = profile.size > metadata.width ? metadata.width : profile.size;
-        }
-        else {
+        } else {
           sizeTo = profile.size > metadata.height ? metadata.height : profile.size;
         }
         let resize = metadata.orientation == 'landscape' ? sizeTo+'x' : 'x'+sizeTo;
-        
+
         args = args.concat(['-resize', resize]);
       }
 
@@ -150,16 +150,16 @@ exports.convertImage = function(imagePath, outputPath, profile_name) {
       newPath = exports.helpers.applySuffix(newPath, profile.suffix);
     }
 
-    if(args.indexOf('-background') == -1) {
-      args = args.concat(['-background', 'white']);
-    }
+    // if(args.indexOf('-background') == -1) {
+    //   args = args.concat(['-background', 'none']);
+    // }
 
     if(imagePath.indexOf('.pdf') == -1) {
       args = args.concat([imagePath, newPath]);
     } else {
       args = args.concat([imagePath+'[0]', newPath]);
     }
-    
+
     im.convert(args, function(err, stdout) {
       if(err) throw err;
       resolve(newPath);
@@ -190,6 +190,24 @@ exports.helpers = {
       fs.unlinkSync(filepath);
     }
   },
+  cleanTemp: function(dirPath) {
+    try {
+      var files = fs.readdirSync(dirPath);
+    } catch(e) {
+      console.log(e);
+      return;
+    }
+    if (files.length > 0) {
+      for (var i = 0; i < files.length; i++) {
+        var filePath = dirPath + '/' + files[i];
+        if (fs.statSync(filePath).isFile()) {
+          exports.helpers.cleanup(filePath);
+        } else {
+          exports.helpers.cleanTemp(filePath);
+        }
+      }
+    }
+  },
   sqs: function(queueUrl, message) {
     return new Promise(function(resolve) {
       const params = {
@@ -207,6 +225,12 @@ exports.helpers = {
 }
 
 exports.handler = async function(event, context) {
+  // randomly getting error while downloading file
+  // therefore added this clean temp on start
+  // Error: ENOSPC: no space left on device, write
+  console.log("Cleaning temp")
+  exports.helpers.cleanTemp('/tmp')
+
   for (let i = 0; i < event.Records.length; i++) {
     let record = event.Records[i];
     const job = JSON.parse(record.Sns.Message);
@@ -216,22 +240,24 @@ exports.handler = async function(event, context) {
       asset: job.asset_id
     }
     const imagePath = exports.helpers.getImagePath(job.key);
-    const outputPath = exports.helpers.replaceExtension(imagePath, 'jpg');
+    const outputPath = exports.helpers.replaceExtension(imagePath, 'png');
     console.log("Downloading", job.bucket, job.key, imagePath);
     await exports.downloadImage(job.bucket, job.key, imagePath);
+
+    let originalPreview = await exports.convertImage(imagePath, outputPath, 'originalPreview');
+
     for(let j = 0; j < job.profiles.length; j++) {
       let profile = job.profiles[j];
       console.log("Converting...", profile);
-      let preview = await exports.convertImage(imagePath, outputPath, profile);
+      let preview = await exports.convertImage(originalPreview, outputPath, profile);
       console.log("Uploading", preview);
       response[profile] = await exports.uploadImage(preview, job.bucket, job.key);
-      exports.helpers.cleanup(preview);
     }
     response.metadata = await exports.identifyImage(imagePath);
-    exports.helpers.cleanup(imagePath);
     console.log("Sending to SQS", response);
     await exports.helpers.sqs(job.queue, response);
     console.log('Done!');
   }
   context.done();
+
 }
