@@ -106,6 +106,7 @@ class Asset {
     }
     /**
      * After thumbnails processing, send message to SQS
+     * @params {Object} response
      */
     async postProcess(response) {
         const queue = this.queue
