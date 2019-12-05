@@ -1,20 +1,20 @@
 const path = require("path")
 const fs = require('fs')
 exports.getImagePath = (imageKey) => {
-    return path.join("/tmp", path.basename(imageKey));
+    return path.join("/tmp", path.basename(imageKey))
 }
 exports.replaceExtension = (imagePath, extension) => {
-    const imageFilename = path.basename(imagePath);
-    const imageExt = path.extname(imagePath);
-    const outputFilename = imageFilename.replace(imageExt, '.'+extension);
-    return imagePath.replace(imageFilename, outputFilename);
+    const filename = path.basename(imagePath, extension);
+    const newFilename = [filename, extension].join('')
+    const oldFilename = path.basename(imagePath)
+    return imagePath.replace(oldFilename, newFilename)
 }
 exports.applySuffix = (filePath, suffix) => {
-    const extension = path.extname(filePath);
-    const filename = path.basename(filePath, extension);
-    const newFilename = [filename, suffix, extension].join('');
-    const oldFilename = path.basename(filePath);
-    return filePath.replace(oldFilename, newFilename);
+    const extension = path.extname(filePath)
+    const filename = path.basename(filePath, extension)
+    const newFilename = [filename, suffix, extension].join('')
+    const oldFilename = path.basename(filePath)
+    return filePath.replace(oldFilename, newFilename)
 }
 exports.cleanup = (filePath) => {
     if (fs.existsSync(filePath)) {

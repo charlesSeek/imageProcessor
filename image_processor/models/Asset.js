@@ -1,4 +1,4 @@
-const { downloadImage, upladImage, sendSQS }= require('../utils/S3Helper')
+const { downloadImage, uploadImage, sendSQS }= require('../utils/S3Helper')
 const { refactorMetadata, 
         replaceExtension, 
         applySuffix,
@@ -54,7 +54,7 @@ class Asset {
             )
             const metadata = refactorMetadata(formatData)
             console.log(`Getting metadata ${JSON.stringify(metadata)} successfully`)
-            const outputPath = replaceExtension(imagePath, 'png')
+            const outputPath = replaceExtension(imagePath, '.png')
             const args = buildConvertArgs(imagePath, outputPath, 'originalPreview', metadata)
             await spawnPromise(
                 '/opt/bin/convert',
@@ -92,7 +92,7 @@ class Asset {
                     console.log(`Generating ${profile} successfully`)
                     const bucket = this.bucket
                     const key = this.s3Key
-                    const uploadKey = await upladImage(outputPath, bucket, key)
+                    const uploadKey = await uploadImage(outputPath, bucket, key)
                     console.log(`Uploading ${uploadKey} successfully`)
                     response[profile] = uploadKey
                 } catch (err) {

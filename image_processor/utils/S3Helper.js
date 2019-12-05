@@ -23,7 +23,7 @@ exports.downloadImage = (bucket, s3Key, target) => {
     })
 }
 
-exports.upladImage = (imagePath, bucket, key) => {
+exports.uploadImage = (imagePath, bucket, key) => {
     return new Promise((resolve, reject) => {
         const imageFileName = path.basename(imagePath);
         const baseFileName = path.basename(key);
