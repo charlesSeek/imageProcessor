@@ -67,7 +67,7 @@ exports.refactorMetadata = (formatData) => {
         if (data[i].indexOf("exif:") == -1) break;
         if (data[i].length > 0) {
             const pair = data[i].split(':')[1].split('=')
-            metadata.exif[pair[0]] = parseInt(pair[1]);
+            metadata.exif[pair[0]] = pair[1];
         }
     }
     return metadata
