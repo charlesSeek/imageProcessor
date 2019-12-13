@@ -1,0 +1,86 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Transform": "AWS::Serverless-2016-10-31",
+    "Description": "The AWS CloudFormation template for image thumbnail lambda function",
+    "Parameters": {
+        "StageName": {
+            "Description": "Enviroment Type",
+            "Default": "dev",
+            "Type": "String",
+            "AllowedValues": [
+                "dev",
+                "staging",
+                "uat",
+                "prod"
+            ]
+        }
+    },
+    "Resources": {
+        "ImageProcessorFunction": {
+            "Type": "AWS::Serverless::Function",
+            "Properties": {
+                "CodeUri": "s3://myadbox-lambda-deployments/95a21c10f4a3149a23b538e1b5c10abf",
+                "FunctionName": {
+                    "Fn::Join": [
+                        "",
+                        [
+                            "image-processor-",
+                            {
+                                "Ref": "StageName"
+                            }
+                        ]
+                    ]
+                },
+                "Handler": "app.handler",
+                "Layers": [
+                    "arn:aws:lambda:us-east-1:678241939174:layer:image-magick:8",
+                    "arn:aws:lambda:us-east-1:678241939174:layer:ghostscript:2"
+                ],
+                "Runtime": "nodejs10.x",
+                "Timeout": 900,
+                "MemorySize": 3008,
+                "Events": {
+                    "SNSEvent": {
+                        "Type": "SNS",
+                        "Properties": {
+                            "Topic": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:",
+                                        "aws:sns:",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        ":",
+                                        {
+                                            "Ref": "AWS::AccountId"
+                                        },
+                                        ":",
+                                        "mythumbnailer-",
+                                        {
+                                            "Ref": "StageName"
+                                        }
+                                    ]
+                                ]
+                            }
+                        }
+                    }
+                },
+                "Tags": {
+                    "Stage": {
+                        "Ref": "StageName"
+                    },
+                    "Name": "image processor"
+                },
+                "Role": "arn:aws:iam::678241939174:role/myadbox-lambda-ImageProcessorFunctionRole-1AHC9M2SGU6PX"
+            }
+        }
+    },
+    "Outputs": {
+        "ImageProcessorFunction": {
+            "Description": "image thumbnail lambda function",
+            "Value": "image-processor-dev"
+        }
+    }
+}

@@ -31,6 +31,7 @@ exports.FORMAT_OPTIONS = {
     PSD: ['-trim', '-flatten', '-background', 'grey'],
     PS: ['-resize', '2048x', '-density', '600', '-flatten', '-background', 'grey'],
     EPS: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB'],
-    EPT: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB']
+    EPT: ['-resize', '2048x', '-density', '600', '-colorspace', 'sRGB'],
+    AI: ['-colorspace', 'sRGB']
 }
 exports.IDENTIFY_FORMAT = '%[width], %[height], %[colorspace], %[size], %m, \n%[EXIF:*]'
