@@ -48,11 +48,6 @@ class Asset {
             const target = getImagePath(s3Key)
             const imagePath = await downloadImage(bucket, s3Key, target)
             console.log(`Downloading ${imagePath} successfully`)
-            const gsVersion = await spawnPromise(
-                '/opt/bin/gs',
-                ['-version']
-            )
-            console.log('gs version:', gsVersion)
             const formatData = await spawnPromise(
                 '/opt/bin/identify',
                 ['-format', IDENTIFY_FORMAT, imagePath]
