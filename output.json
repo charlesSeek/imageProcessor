@@ -19,7 +19,7 @@
         "ImageProcessorFunction": {
             "Type": "AWS::Serverless::Function",
             "Properties": {
-                "CodeUri": "s3://myadbox-lambda-deployments/426c6c27af4af204e9ef73ceb1615f1a",
+                "CodeUri": "s3://myadbox-lambda-deployments/ab09c65efba3f986b2460f73de5f9d7f",
                 "FunctionName": {
                     "Fn::Join": [
                         "",
