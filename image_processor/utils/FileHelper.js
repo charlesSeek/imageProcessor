@@ -4,7 +4,8 @@ exports.getImagePath = (imageKey) => {
     return path.join("/tmp", path.basename(imageKey))
 }
 exports.replaceExtension = (imagePath, extension) => {
-    const filename = path.basename(imagePath, extension);
+    const fileExtension = path.extname(imagePath)
+    const filename = path.basename(imagePath, fileExtension);
     const newFilename = [filename, extension].join('')
     const oldFilename = path.basename(imagePath)
     return imagePath.replace(oldFilename, newFilename)
