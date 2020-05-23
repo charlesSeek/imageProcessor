@@ -16,10 +16,10 @@
     "deploy": "sam deploy --template-file packaged.yaml --stack-name myadbox-lambda --capabilities CAPABILITY_IAM"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
-    "mocha": "^5.1.1",
+    "chai": "^4.2.0",
+    "mocha": "^6.0.0",
     "mock-aws-sinon": "^1.3.2",
-    "sinon": "^4.1.3",
-    "chai-string": "^1.4.0"
+    "sinon": "^7.5.0",
+    "chai-string": "^1.5.0"
   }
 }
